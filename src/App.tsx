@@ -12,15 +12,17 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import Logo from './logo.svg';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import GoodJobsCard from './components/GoodJobsCard/GoodJobsCard';
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
 
   return (
     <SafeAreaProvider>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
+      <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+        <AppContent />
+      </SafeAreaView>
     </SafeAreaProvider>
   );
 }
@@ -30,36 +32,29 @@ function AppContent() {
     <View style={styles.container}>
       <View
         style={{
-          height: 250,
+          height: 260,
           justifyContent: 'center',
         }}
       >
         <Text style={styles.title}>GOOD</Text>
-        <Text style={styles.title}>JOBBER</Text>
+        <Text style={styles.title}>
+          JOBB<Text style={styles.titleAccent}>ER</Text>
+        </Text>
       </View>
-      <View style={styles.card}>
-        <Logo width={150} height={150} color={'#fffffff'} />
-        <Text style={styles.gj_text}>{100}</Text>
-      </View>
+      <GoodJobsCard />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: 50,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#ffffff',
-  },
   container: {
     width: '100%',
     flex: 1,
     alignItems: 'center',
   },
   card: {
-    paddingVertical: 50,
-    paddingHorizontal: 60,
+    paddingVertical: 45,
+    paddingHorizontal: 55,
     borderRadius: 25,
     alignSelf: 'center',
     backgroundColor: '#3498db',
@@ -71,6 +66,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#ffffff',
     fontSize: 50,
+  },
+  titleAccent: {
+    fontSize: 40,
+    color: '#3498db', // color principal
+  },
+  title: {
+    margin: -10,
+    textAlignVertical: 'center',
+    fontSize: 50,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#ffffff',
   },
 });
 
