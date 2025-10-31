@@ -1,24 +1,85 @@
-import { StyleSheet, View, Animated, Easing } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Animated,
+  Easing,
+  StyleProp,
+  ViewStyle,
+} from 'react-native';
 import GoodJobsCounter from './GoodJobsCounter';
 import { useState, useRef } from 'react';
 import GoodJobsAnalysis from './GoodJobsAnalysis';
+import { useTheme } from '@react-navigation/native';
 
 export interface gjHistoryEntry {
   date: Date;
   amount: number;
 }
 
-export default function GoodJobsCard() {
+interface GoodJobsCard {
+  user: any;
+  containerStyle?: StyleProp<ViewStyle>;
+}
+
+export default function GoodJobsCard({
+  user,
+  containerStyle = {},
+}: GoodJobsCard) {
+  const { colors } = useTheme();
   const [view, setView] = useState<'COUNTER' | 'ANALYSIS'>('COUNTER');
   const flipAnimation = useRef(new Animated.Value(0)).current;
 
-  const gjReg: gjHistoryEntry[] = [
-    { date: new Date('2024-10-20'), amount: 0 },
-    { date: new Date('2024-10-21'), amount: 1 },
-    { date: new Date('2024-10-22'), amount: 0 },
-    { date: new Date('2024-10-23'), amount: 3 },
-    { date: new Date('2024-10-24'), amount: 4 },
-  ];
+  // Generar historial de GoodJobs desde las transacciones del usuario
+  const gjReg: gjHistoryEntry[] = (() => {
+    if (
+      !user.transactions?.received ||
+      user.transactions.received.length === 0
+    ) {
+      return [];
+    }
+
+    // Obtener todas las fechas de transacciones
+    const transactions = user.transactions.received.map((transaction: any) => ({
+      date: new Date(transaction.createdAt || transaction.date),
+      amount: transaction.amount || 1,
+    }));
+
+    // Ordenar por fecha
+    transactions.sort((a: any, b: any) => a.date.getTime() - b.date.getTime());
+
+    // Obtener la fecha de la primera transacción (día 0)
+    const firstDate = new Date(transactions[0].date);
+    firstDate.setHours(0, 0, 0, 0);
+
+    // Crear un Map para acumular transacciones por día
+    const historyMap = new Map<number, number>();
+
+    transactions.forEach((transaction: any) => {
+      const transactionDate = new Date(transaction.date);
+      transactionDate.setHours(0, 0, 0, 0);
+
+      // Calcular días desde la primera transacción
+      const daysSinceFirst = Math.floor(
+        (transactionDate.getTime() - firstDate.getTime()) /
+          (1000 * 60 * 60 * 24),
+      );
+
+      const currentAmount = historyMap.get(daysSinceFirst) || 0;
+      historyMap.set(daysSinceFirst, currentAmount + 1);
+    });
+
+    // Convertir a array con fecha y cantidad
+    return Array.from(historyMap.entries())
+      .map(([dayNumber, _amount]) => {
+        const date = new Date(firstDate);
+        date.setDate(date.getDate() + dayNumber);
+        return {
+          date,
+          amount: dayNumber, // El valor es el número de días desde la primera transacción
+        };
+      })
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+  })();
 
   function handleOnClick() {
     setView(view === 'COUNTER' ? 'ANALYSIS' : 'COUNTER');
@@ -41,26 +102,26 @@ export default function GoodJobsCard() {
   });
 
   return (
-    <View style={styles.container}>
+    <View style={{ ...styles.container, ...containerStyle }}>
       <Animated.View
         style={[
           styles.card,
-          styles.card_counter,
           {
+            backgroundColor: colors.primary,
             transform: [{ perspective: 1000 }, { rotateY: frontInterpolate }],
             position: 'absolute',
           },
         ]}
         onTouchEnd={handleOnClick}
       >
-        <GoodJobsCounter gj={gjReg[gjReg.length - 1].amount} />
+        <GoodJobsCounter gj={user.goodJobsCount} />
       </Animated.View>
 
       <Animated.View
         style={[
           styles.card,
-          styles.card_analysis,
           {
+            backgroundColor: colors.primary,
             transform: [{ perspective: 1000 }, { rotateY: backInterpolate }],
           },
         ]}
@@ -76,22 +137,13 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 325, // Altura de la carta
-    width: 250, // Ancho de la carta
   },
   card: {
     width: 250,
     height: 325,
     borderRadius: 25,
-    backgroundColor: '#3498db',
     alignItems: 'center',
     justifyContent: 'center',
     backfaceVisibility: 'hidden',
-  },
-  card_counter: {
-    backgroundColor: '#3498db',
-  },
-  card_analysis: {
-    backgroundColor: '#3498db',
   },
 });

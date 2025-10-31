@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Path, Circle, G, Line, Polyline } from 'react-native-svg';
+import Svg, { Circle, G, Line, Polyline } from 'react-native-svg';
 import { gjHistoryEntry } from './GoodJobsCard';
 
 const CARD_WIDTH = 250;
@@ -10,6 +10,15 @@ export default function GoodJobsAnalysis({
 }: {
   rawData: gjHistoryEntry[];
 }) {
+  // Manejar caso sin datos
+  if (!rawData || rawData.length === 0) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.label}>No hay datos disponibles</Text>
+      </View>
+    );
+  }
+
   const data: { x: number; y: number }[] = rawData.map((d, i) => ({
     x: i,
     y: d.amount,
@@ -19,11 +28,15 @@ export default function GoodJobsAnalysis({
   const graphWidth = CARD_WIDTH - padding * 2;
   const graphHeight = CARD_HEIGHT - padding * 2;
 
-  const maxY = Math.max(...data.map(d => d.y));
+  const maxY = Math.max(...data.map(d => d.y), 1); // Mínimo 1 para evitar división por 0
   const minY = 0;
 
   const points = data.map((point, index) => {
-    const x = padding + (index / (data.length - 1)) * graphWidth;
+    const x =
+      padding +
+      (data.length > 1
+        ? (index / (data.length - 1)) * graphWidth
+        : graphWidth / 2);
     const y =
       padding + graphHeight - ((point.y - minY) / (maxY - minY)) * graphHeight;
     return { x, y, value: point.y };
@@ -31,7 +44,7 @@ export default function GoodJobsAnalysis({
 
   // Calcular posición Y para el valor 0 y el último valor
   const zeroY = padding + graphHeight; // Línea en y=0
-  const lastValueY = points[points.length - 1].y; // Línea en el último valor
+  const lastValueY = points.length > 0 ? points[points.length - 1].y : zeroY; // Línea en el último valor
 
   // Crear string de puntos para polyline (líneas rectas)
   const pointsString = points.map(p => `${p.x},${p.y}`).join(' ');

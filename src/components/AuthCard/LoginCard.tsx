@@ -1,13 +1,46 @@
 import { useState } from 'react';
-import { StyleSheet, View, TextInput, Text } from 'react-native';
+import { StyleSheet, View, TextInput } from 'react-native';
+import api from '../../hooks/Api';
+import { JWTContextType } from '../../contexts/JwtContext';
+import Button from '../Utils/Button';
 
-export default function LoginCard() {
+export default function LoginCard({
+  setJwt,
+}: {
+  setJwt: JWTContextType['setJwt'];
+}) {
   const [username, setUsername] = useState<string>('');
+
   const [password, setPassword] = useState<string>('');
-  const [buttonIsHover, setButtonIsHover] = useState(false);
 
   function handleChangePassword(pass: string) {
     setPassword(pass);
+  }
+
+  async function handleSubmit() {
+    try {
+      const res = await api('/auth/login', {
+        body: {
+          name: username,
+          password,
+        },
+        init: {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        await setJwt(data.token);
+        console.log('JWT LOADED');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+    }
   }
 
   return (
@@ -25,28 +58,8 @@ export default function LoginCard() {
         value={password}
         secureTextEntry
       />
-      <View
-        style={buttonIsHover ? styles.button_hover : styles.button}
-        onTouchStart={() => {
-          setButtonIsHover(true);
-        }}
-        onTouchEnd={() => {
-          setButtonIsHover(false);
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 25,
-            fontWeight: 'bold',
-            width: '100%',
-            height: '100%',
-            textAlign: 'center',
-            textAlignVertical: 'center',
-          }}
-        >
-          Submit
-        </Text>
-      </View>
+
+      <Button text="Submit" OnTouchEnd={handleSubmit} />
     </View>
   );
 }
@@ -78,19 +91,5 @@ const styles = StyleSheet.create({
     borderColor: 'white',
     borderRadius: 15,
     padding: 10,
-  },
-  button: {
-    margin: 20,
-    width: 150,
-    height: 70,
-    borderRadius: 20,
-    backgroundColor: 'white',
-  },
-  button_hover: {
-    margin: 20,
-    width: 150,
-    height: 70,
-    borderRadius: 20,
-    backgroundColor: '#dddddd',
   },
 });
